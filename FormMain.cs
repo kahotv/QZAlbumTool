@@ -22,6 +22,8 @@ namespace QZAlbumTool
             InitializeComponent();
         }
 
+        private FolderBrowserDialog m_dlg = new FolderBrowserDialog();
+
         private void FormMain_Load(object sender, EventArgs e)
         {
             web.Url = new Uri("https://qzone.qq.com");
@@ -159,7 +161,13 @@ namespace QZAlbumTool
 
             return listJAlbumList;
         }
-        private Image GetAlbumFace(string pre,string name)
+        /// <summary>
+        /// 获取图片
+        /// </summary>
+        /// <param name="pre">url</param>
+        /// <param name="type">a、m、b</param>
+        /// <returns></returns>
+        private Image GetImage(string pre,string type = null,bool save = false)
         {
             Image img = null;
 
@@ -169,11 +177,25 @@ namespace QZAlbumTool
                 wc.Headers.Add("cookie", web.Document.Cookie);
                 //wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36");
                 //string url = pre + "&rf=albumlist&t=5";
-                string url = pre + "&d=0";
-                if(url.Contains("/psb?/"))
+                //string url = pre + "&d=0";
+
+                string url = pre;
+
+                if(!string.IsNullOrWhiteSpace(type))
                 {
-                    url = url.Replace("/a/", "/m/");
+                    if (url.Contains("/psb?/"))
+                    {
+                        url = url.Replace("/a/", "/" + type + "/");
+                    }
+                    url += "&d=1";
+                    if (save)
+                        url += "&save=1";
                 }
+                else
+                {
+                    url += "&t=0";
+                }
+
                 byte[] data = wc.DownloadData(url);
                 
                 using (MemoryStream mStream = new MemoryStream(data))
@@ -216,35 +238,202 @@ namespace QZAlbumTool
             listView1.LargeImageList.ImageSize = new Size(146, 110);
             listView1.View = View.LargeIcon;
             int i = 0;
-            foreach (var item in list)
+            foreach (dynamic jitem in list)
             {
-                dynamic jitem = item;
                 string name = jitem.name;
-                Image face = GetAlbumFace((string)jitem.pre, name);
+                Image img = GetImage((string)jitem.pre);
                 //Debug.WriteLine("添加图片" + i + "| url:" + (string)jitem.pre);
 
-                if (face == null)
+                if (img == null)
                 {
                     Thread.Sleep(500);
-                    face = GetAlbumFace((string)jitem.pre, name);
+                    img = GetImage((string)jitem.pre);
                 }
 
-                if (face == null)
+                if (img == null)
                 {
                     Debug.WriteLine("添加图片" + i + "失败(" + (string)jitem.name + ")");
                 }
                 else
                 {
-                    listView1.LargeImageList.Images.Add(face);
-                    listView1.Items.Add(name, i++);
-                }
+                    ListViewItem item = new ListViewItem()
+                    {
+                        Tag = jitem,
+                        Text = name,
+                        ImageIndex = i++
+                    };
 
+                    listView1.LargeImageList.Images.Add(img);
+
+                    listView1.Items.Add(item);
+                }
 
             }
         }
 
         private void BtnSelectAll_Click(object sender, EventArgs e)
         {
+            foreach(ListViewItem item  in listView1.Items)
+            {
+                item.Selected = true;
+            }
         }
+
+        private void BtnSelectNot_Click(object sender, EventArgs e)
+        {
+            foreach (ListViewItem item in listView1.Items)
+            {
+                item.Selected = !item.Selected;
+            }
+        }
+
+        private List<JObject> GetPhotoList(string p_skey, string qqnumber,string id)
+        {
+            string g_tk = GetG_TK(p_skey).ToString();
+
+            string url = "https://h5.qzone.qq.com/proxy/domain/photo.qzone.qq.com/fcgi-bin/cgi_list_photo?" +
+                "g_tk=" + g_tk +
+                "&callback=shine0_Callback" +
+                "&t=160252680" +
+                "&mode=0" +
+                "&idcNum=4" +
+                "&hostUin=" + qqnumber +
+                "&topicId=" + id +
+                "&noTopic=0" +
+                "&uin="+ qqnumber +
+                "&pageStart=0" +
+                "&pageNum=9999" +
+                "&skipCmtCount=0" +
+                "&singleurl=1" +
+                "&batchId=" +
+                "&notice=0" +
+                "&appid=4" +
+                "&inCharset=utf-8" +
+                "&outCharset=utf-8" +
+                "&source=qzone" +
+                "&plat=qzone" +
+                "&outstyle=json" +
+                "&format=jsonp" +
+                "&json_esc=1" +
+                "&question=" +
+                "&answer=" +
+                "&callbackFun=shine0" +
+                "&_=" + DateTime.UtcNow.ToFileTimeUtc().ToString();
+
+            WebClient wc = new WebClient() {  Encoding = Encoding.UTF8};
+            wc.Headers.Add("cookie", web.Document.Cookie);
+
+            string resp = wc.DownloadString(url);
+
+            List<JObject> list = new List<JObject>();
+
+            do
+            {
+                if (string.IsNullOrWhiteSpace(resp))
+                    break;
+
+                string s_key = "shine0_Callback(";
+                string e_key = ");";
+                int start = resp.IndexOf(s_key) + s_key.Length;
+                int end = resp.LastIndexOf(e_key);
+
+                resp = resp.Substring(start, end - start);
+                JObject jobj = JObject.Parse(resp);
+
+                if ((int)jobj["code"] != 0 || (int)jobj["subcode"] != 0)
+                    break;
+
+                JArray photoList = (JArray)jobj["data"]["photoList"];
+
+                foreach(JObject jphoto in photoList)
+                {
+                    list.Add(jphoto);
+                }
+            } while (false);
+
+            return list;
+        }
+
+        private void BtnExport_Click(object sender, EventArgs e)
+        {
+            if (m_dlg.ShowDialog() != DialogResult.OK)
+                return;
+
+            string path = m_dlg.SelectedPath;
+
+            string err = "这些图片下载失败:\r\n";
+
+            foreach (ListViewItem item in listView1.Items)
+            {
+                if (!item.Selected)
+                    continue;
+
+                dynamic jitem = item.Tag;
+
+                string err2 = "";
+
+                var list = GetPhotoList(GetPSkey(), GetQQNumber(), jitem.id.ToString());
+
+                if(list == null)
+                {
+                    MessageBox.Show("打开相册[" + jitem.name + "]失败");
+                    continue;
+                }
+                int counter = 0;
+                foreach(JObject jphoto in list)
+                {
+                    //string photo_batchid = (string)jphoto["batchId"];
+                    string photo_url = (string)jphoto["url"];
+                    string photo_name = (string)jphoto["name"];
+                    //int photo_witdh = (int)jphoto["width"];
+                    //int photo_height = (int)jphoto["height"];
+                    bool photo_isvideo = (bool)jphoto["is_video"];
+
+                    if(photo_isvideo)
+                    {
+                        //视频不能下载
+                        err2 += photo_name + "(视频),";
+                        continue;
+                    }
+
+                    Image img = null;
+
+                    try { img = GetImage(photo_url, "b",true); } catch { }
+                    if (img == null) { Thread.Sleep(500); try { img = GetImage(photo_url, "b", true); } catch { } }
+
+                    if (img == null)
+                    {
+                        err2 += photo_name + ",";
+                        continue;
+                    }
+
+                    photo_name = photo_name.Replace('\\', '_').Replace('/', '_').Replace(':', '_');
+
+                    string filename = path + "\\" + counter++  + "_" +photo_name + ".png";
+
+                    Bitmap bmp = new Bitmap(img.Width, img.Height);
+                    Graphics g = Graphics.FromImage(bmp);
+                    g.DrawImage(img, 0, 0);
+
+
+
+                    filename = filename
+                        .Replace('*', '_')
+                        .Replace('?', '_')
+                        .Replace('<', '_')
+                        .Replace('>', '_')
+                        .Replace('|', '_');
+
+                    bmp.Save(filename);
+                }
+
+                if(!string.IsNullOrWhiteSpace(err2))
+                {
+                    err += jitem.name + "[" + err2 + "]\r\n";
+                }
+            }
+            MessageBox.Show("处理完毕");
+        }
+
     }
 }
