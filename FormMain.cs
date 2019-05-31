@@ -27,7 +27,6 @@ namespace QZAlbumTool
         private void FormMain_Load(object sender, EventArgs e)
         {
             web.Url = new Uri("https://qzone.qq.com");
-            
         }
 
         private string GetPSkey()
@@ -49,7 +48,8 @@ namespace QZAlbumTool
             try
             {
                 var cookies = web.Document.Cookie.Split(';');
-                qqnumber = cookies.Where(p => p.StartsWith(" uin_cookie=")).First().Split('=').ToArray()[1];
+                qqnumber = cookies.Where(p => p.StartsWith(" uin=")).First().Split('=').ToArray()[1];
+                qqnumber = int.Parse(qqnumber.Substring(1)).ToString();
             }
             catch { }
 
@@ -64,6 +64,29 @@ namespace QZAlbumTool
                 t += (t << 5) + e[n];
             }
             return t & 0x7FFFFFFF;
+        }
+
+        private JObject ParseCallbackJson(string html)
+        {
+            JObject jobj = null;
+            if (string.IsNullOrWhiteSpace(html))
+                return null;
+
+            string start_key = "shine0_Callback(";
+            string end_key = ");";
+
+            int start = html.IndexOf(start_key);
+            int end = html.LastIndexOf(end_key);
+
+            if (start >= 0 && end >= 0 && end > start)
+            {
+                html = html.Substring(start+ start_key.Length, end - start- start_key.Length);
+
+                try { jobj = JObject.Parse(html); } catch { }
+
+            }
+
+            return jobj;
         }
 
         private List<JObject> GetAlbumList(string p_skey,string qqnumber)
@@ -103,57 +126,36 @@ namespace QZAlbumTool
             try { json = wc.DownloadString(url); } catch { Thread.Sleep(1000); }
             if(json == null) try { json = wc.DownloadString(url); } catch { }
 
-            if(json != null)
+            JObject jobj = ParseCallbackJson(json);
+
+            try
             {
-                if (json.Contains("albumListModeClass"))
+                do
                 {
-                    // 相册列表
-                    int start = json.IndexOf("albumListModeClass");
-                    int end = json.LastIndexOf("}\r\n}\r\n);");
-                    if(end == -1)
-                        end = json.LastIndexOf("}\n}\n);");
-                    if (start >= 0 && end >= 0)
+                    if ((int)jobj["code"] != 0 || (int)jobj["subcode"] != 0)
+                        break;
+
+                    listJAlbumList = new List<JObject>();
+
+                    var jalbumListModeClass = jobj["data"]["albumListModeClass"];
+
+                    if (jalbumListModeClass == null)
+                        break;
+
+
+                    foreach (var jelem in jalbumListModeClass)
                     {
-                        string jsAlbumListModeClass = "{\"" + json.Substring(start, end - start) + "}";
-
-                        JObject jobj = JObject.Parse(jsAlbumListModeClass);
-                        listJAlbumList = new List<JObject>();
-
-                        foreach (var jelem in jobj["albumListModeClass"])
+                        foreach (var jelem2 in jelem["albumList"])
                         {
-                            foreach (var jelem2 in jelem["albumList"])
-                            {
-                                listJAlbumList.Add((JObject)jelem2);
-                            }
+                            listJAlbumList.Add((JObject)jelem2);
                         }
-                        Debug.WriteLine("完成");
                     }
+                    Debug.WriteLine("完成");
+                } while (false);
 
-                    //显示在列表里
-                    /*
-                {
-                   "allowAccess" : 1,
-                   "anonymity" : 0,
-                   "bitmap" : "11000010",
-                   "classid" : 100,
-                   "comment" : 0,
-                   "createtime" : 123456,
-                   "desc" : "",
-                   "handset" : 0,
-                   "id" : "xxxxx",
-                   "lastuploadtime" : 123456,
-                   "modifytime" : 123456,
-                   "name" : "坦克大战",
-                   "order" : 1,
-                   "pre" : "http:\/\/b323.photo.store.qq.com\/psb?\/xxxxxx\/xxxxxxxx!\/a\/xxxxx",
-                   "priv" : 3,
-                   "pypriv" : 3,
-                   "total" : 6,
-                   "viewtype" : 0
-                },
-                    */
-                }
             }
+            catch { listJAlbumList = null; }
+
 
             //获取相册列表 相册名称+封面缩略图
             //获取相册内容列表  照片名称+缩略图+对应的原图
@@ -203,7 +205,7 @@ namespace QZAlbumTool
                     img = Image.FromStream(mStream);
                 }
             }
-            catch(Exception e)
+            catch
             {
 
             }
@@ -225,8 +227,19 @@ namespace QZAlbumTool
                 else
                 {
                     var list = GetAlbumList(p_skey, qq);
-                    Debug.WriteLine("显示中,共" + list.Count + "个相册");
-                    ShowAlbumList(list);
+
+                    if(list == null)
+                    {
+                        MessageBox.Show("获取相册列表失败");
+                    }else if(list.Count == 0)
+                    {
+                        MessageBox.Show("相册为空");
+                    }
+                    else
+                    {
+                        MessageBox.Show("显示中,共" + list.Count + "个相册，载入缓慢请耐心等待");
+                        ShowAlbumList(list);
+                    }
                 }
             }
         }

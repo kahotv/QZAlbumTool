@@ -81,7 +81,6 @@
             this.web.Location = new System.Drawing.Point(3, 3);
             this.web.MinimumSize = new System.Drawing.Size(20, 20);
             this.web.Name = "web";
-            this.web.ScriptErrorsSuppressed = true;
             this.web.Size = new System.Drawing.Size(478, 410);
             this.web.TabIndex = 0;
             // 
@@ -210,7 +209,7 @@
             this.ClientSize = new System.Drawing.Size(492, 442);
             this.Controls.Add(this.tabControl1);
             this.Name = "FormMain";
-            this.Text = "QQ相册工具 1.1";
+            this.Text = "QQ相册工具 1.2";
             this.Load += new System.EventHandler(this.FormMain_Load);
             this.tabControl1.ResumeLayout(false);
             this.tabPageLogin.ResumeLayout(false);
