@@ -30,7 +30,6 @@
         {
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPageLogin = new System.Windows.Forms.TabPage();
-            this.web = new System.Windows.Forms.WebBrowser();
             this.tabPageAlbum = new System.Windows.Forms.TabPage();
             this.panel2 = new System.Windows.Forms.Panel();
             this.listView1 = new System.Windows.Forms.ListView();
@@ -42,8 +41,8 @@
             this.btnSelectNot = new System.Windows.Forms.Button();
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.listBox1 = new System.Windows.Forms.ListBox();
+            this.cbUseSize = new System.Windows.Forms.CheckBox();
             this.tabControl1.SuspendLayout();
-            this.tabPageLogin.SuspendLayout();
             this.tabPageAlbum.SuspendLayout();
             this.panel2.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -66,7 +65,6 @@
             // 
             // tabPageLogin
             // 
-            this.tabPageLogin.Controls.Add(this.web);
             this.tabPageLogin.Location = new System.Drawing.Point(4, 22);
             this.tabPageLogin.Name = "tabPageLogin";
             this.tabPageLogin.Padding = new System.Windows.Forms.Padding(3);
@@ -74,15 +72,6 @@
             this.tabPageLogin.TabIndex = 0;
             this.tabPageLogin.Text = "1.登录";
             this.tabPageLogin.UseVisualStyleBackColor = true;
-            // 
-            // web
-            // 
-            this.web.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.web.Location = new System.Drawing.Point(3, 3);
-            this.web.MinimumSize = new System.Drawing.Size(20, 20);
-            this.web.Name = "web";
-            this.web.Size = new System.Drawing.Size(478, 410);
-            this.web.TabIndex = 0;
             // 
             // tabPageAlbum
             // 
@@ -117,6 +106,7 @@
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.cbUseSize);
             this.panel1.Controls.Add(this.label1);
             this.panel1.Controls.Add(this.panel3);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
@@ -128,7 +118,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(14, 17);
+            this.label1.Location = new System.Drawing.Point(5, 6);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(113, 12);
             this.label1.TabIndex = 4;
@@ -192,8 +182,8 @@
             this.listBox1.FormattingEnabled = true;
             this.listBox1.ItemHeight = 12;
             this.listBox1.Items.AddRange(new object[] {
-            "版本 1.1",
-            "时间 2019.05.28",
+            "版本 1.3",
+            "时间 2019.11.03",
             "作者 Yui",
             "博客 https://www.kaho.tv",
             "源码 https://github.com/kahotv/QZAlbumTool"});
@@ -202,6 +192,18 @@
             this.listBox1.Size = new System.Drawing.Size(478, 410);
             this.listBox1.TabIndex = 0;
             // 
+            // cbUseSize
+            // 
+            this.cbUseSize.AutoSize = true;
+            this.cbUseSize.Checked = true;
+            this.cbUseSize.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cbUseSize.Location = new System.Drawing.Point(7, 21);
+            this.cbUseSize.Name = "cbUseSize";
+            this.cbUseSize.Size = new System.Drawing.Size(108, 16);
+            this.cbUseSize.TabIndex = 5;
+            this.cbUseSize.Text = "文件名包含尺寸";
+            this.cbUseSize.UseVisualStyleBackColor = true;
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -209,10 +211,9 @@
             this.ClientSize = new System.Drawing.Size(492, 442);
             this.Controls.Add(this.tabControl1);
             this.Name = "FormMain";
-            this.Text = "QQ相册工具 1.2";
+            this.Text = "QQ相册工具 1.3";
             this.Load += new System.EventHandler(this.FormMain_Load);
             this.tabControl1.ResumeLayout(false);
-            this.tabPageLogin.ResumeLayout(false);
             this.tabPageAlbum.ResumeLayout(false);
             this.panel2.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
@@ -234,11 +235,11 @@
         private System.Windows.Forms.ListView listView1;
         private System.Windows.Forms.Button btnSelectNot;
         private System.Windows.Forms.Button btnSelectAll;
-        private System.Windows.Forms.WebBrowser web;
         private System.Windows.Forms.Button btnExport;
         private System.Windows.Forms.ListBox listBox1;
         private System.Windows.Forms.Panel panel3;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.CheckBox cbUseSize;
     }
 }
 

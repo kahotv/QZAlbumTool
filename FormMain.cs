@@ -12,11 +12,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json.Linq;
+using CefSharp;
+using CefSharp.WinForms;
+using System.Text.RegularExpressions;
 
 namespace QZAlbumTool
 {
     public partial class FormMain : Form
     {
+        private ChromiumWebBrowser web = null;
         public FormMain()
         {
             InitializeComponent();
@@ -26,34 +30,51 @@ namespace QZAlbumTool
 
         private void FormMain_Load(object sender, EventArgs e)
         {
-            web.Url = new Uri("https://qzone.qq.com");
+            //web.Url = new Uri("");
+            InitBrowser();
+        }
+        private void InitBrowser()
+        {
+            Cef.Initialize(new CefSettings());
+            web = new ChromiumWebBrowser("https://qzone.qq.com");
+            tabPageLogin.Controls.Add(web);
+            web.Dock = DockStyle.Fill;
         }
 
         private string GetPSkey()
         {
-            string p_skey = null;
-            try
-            {
-                var cookies = web.Document.Cookie.Split(';');
-                p_skey = cookies.Where(p => p.StartsWith(" p_skey=")).First().Split('=').ToArray()[1];
-            }
-            catch { }
-
+            string p_skey =  GetCookieValue("p_skey");
             return p_skey;
         }
         private string GetQQNumber()
         {
-            string qqnumber = null;
-
+            string qqnumber = int.Parse(GetCookieValue("uin").Substring(1)).ToString();
+            return qqnumber;
+        }
+        private string GetCookieValue(string key)
+        {
+            string val = "";
             try
             {
-                var cookies = web.Document.Cookie.Split(';');
-                qqnumber = cookies.Where(p => p.StartsWith(" uin=")).First().Split('=').ToArray()[1];
-                qqnumber = int.Parse(qqnumber.Substring(1)).ToString();
+                var cookies = web.GetCookieManager().VisitAllCookiesAsync().Result.Where(p => p.Name == key).ToList();
+                if (cookies.Count > 0)
+                {
+                    val = cookies[0].Value;
+                }
             }
             catch { }
 
-            return qqnumber;
+            return val;
+        }
+        private void CopyCookie(ChromiumWebBrowser src, WebClient dst)
+        {
+            var cookies = src.GetCookieManager().VisitAllCookiesAsync().Result;
+            string strcookies = "";
+            foreach (var cookie in cookies)
+            {
+                strcookies += cookie.Name + "=" + cookie.Value + ";";
+            }
+            dst.Headers.Add("Cookie", strcookies);
         }
         private int GetG_TK(string p_skey)
         {
@@ -119,8 +140,8 @@ namespace QZAlbumTool
                 "&_=" + DateTime.UtcNow.ToFileTimeUtc().ToString();
 
             WebClient wc = new WebClient() { Encoding = Encoding.UTF8 };
-            wc.Headers.Add("cookie", web.Document.Cookie);
             wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36");
+            CopyCookie(web,wc);
             string json = string.Empty;
 
             try { json = wc.DownloadString(url); } catch { Thread.Sleep(1000); }
@@ -175,42 +196,75 @@ namespace QZAlbumTool
 
             try
             {
+                string filetype = "";
+                byte[] data = GetFile(pre,out filetype, type, save);
+
+                using (MemoryStream mStream = new MemoryStream(data))
+                {
+                    img = Image.FromStream(mStream);
+                }
+            }
+            catch { }
+
+            return img;
+        }
+        private byte[] GetFile(string pre,out string filetype,string type = null, bool save = false)
+        {
+            byte[] data = null;
+
+            filetype = "";
+            try
+            {
                 WebClient wc = new WebClient();
-                wc.Headers.Add("cookie", web.Document.Cookie);
+                CopyCookie(web,wc);
+                //wc.Headers.Add("cookie", web.GetCookieManager().ToString());
                 //wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36");
                 //string url = pre + "&rf=albumlist&t=5";
                 //string url = pre + "&d=0";
 
                 string url = pre;
 
-                if(!string.IsNullOrWhiteSpace(type))
+                if (!string.IsNullOrWhiteSpace(type))
                 {
                     if (url.Contains("/psb?/"))
                     {
-                        url = url.Replace("/a/", "/" + type + "/");
+                        if(url.Contains("/a/"))
+                            url = url.Replace("/a/", "/" + type + "/");
+                        else if(url.Contains("/b/"))
+                            url = url.Replace("/b/", "/" + type + "/");
                     }
                     url += "&d=1";
                     if (save)
                         url += "&save=1";
+
+                    //把url换成原图url更换host就行
+                    url = Regex.Replace(url, @"//([a-z 0-9 .])*/", "//r.photo.store.qq.com/");
+                    //http://r.photo.store.qq.com/psb?/V12fsSln18e8BB/8*DJV4OpdWekCnDzBw3vNgCPDbUY4TrTvNOCwMmA14Y!/b/dC8BAAAAAAAA&bo=AAqgBQAKoAURBzA!
+                    //http://r.photo.store.qq.com/psb?/V12fsSln18e8BB/u623hhimDbAeYuMkulM6JFuTmCTIFqlr0h*ArmMrPrc!/r/dA0BAAAAAAAA
+
                 }
                 else
                 {
                     url += "&t=0";
                 }
 
-                byte[] data = wc.DownloadData(url);
-                
-                using (MemoryStream mStream = new MemoryStream(data))
+                data = wc.DownloadData(url);
+
+                try 
                 {
-                    img = Image.FromStream(mStream);
+
+                    filetype = wc.ResponseHeaders["Content-Disposition"].Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)[1].Split('=')[1].Split('.')[1];
+
                 }
+                catch { }
+
             }
             catch
             {
 
             }
 
-            return img;
+            return data;
         }
 
         private void TabControl1_Selected(object sender, TabControlEventArgs e)
@@ -334,8 +388,8 @@ namespace QZAlbumTool
                 "&_=" + DateTime.UtcNow.ToFileTimeUtc().ToString();
 
             WebClient wc = new WebClient() {  Encoding = Encoding.UTF8};
-            wc.Headers.Add("cookie", web.Document.Cookie);
-
+            //wc.Headers.Add("cookie", web.GetCookieManager().ToString());
+            CopyCookie(web, wc);
             string resp = wc.DownloadString(url);
 
             List<JObject> list = new List<JObject>();
@@ -395,7 +449,7 @@ namespace QZAlbumTool
                 int counter = 0;
                 foreach(JObject jphoto in list)
                 {
-                    //string photo_batchid = (string)jphoto["batchId"];
+                    string photo_batchid = (string)jphoto["batchId"];
                     string photo_url = (string)jphoto["url"];
                     string photo_name = (string)jphoto["name"];
                     //int photo_witdh = (int)jphoto["width"];
@@ -409,26 +463,9 @@ namespace QZAlbumTool
                         continue;
                     }
 
-                    Image img = null;
-
-                    try { img = GetImage(photo_url, "b",true); } catch { }
-                    if (img == null) { Thread.Sleep(500); try { img = GetImage(photo_url, "b", true); } catch { } }
-
-                    if (img == null)
-                    {
-                        err2 += photo_name + ",";
-                        continue;
-                    }
-
                     photo_name = photo_name.Replace('\\', '_').Replace('/', '_').Replace(':', '_');
 
-                    string filename = path + "\\" + counter++  + "_" +photo_name + ".png";
-
-                    Bitmap bmp = new Bitmap(img.Width, img.Height);
-                    Graphics g = Graphics.FromImage(bmp);
-                    g.DrawImage(img, 0, 0);
-
-
+                    string filename = path + "\\" + counter++  + "_" +photo_name;
 
                     filename = filename
                         .Replace('*', '_')
@@ -437,7 +474,30 @@ namespace QZAlbumTool
                         .Replace('>', '_')
                         .Replace('|', '_');
 
-                    bmp.Save(filename);
+                    
+
+                    string filetype = "";
+                    byte[] data = GetFile(photo_url,out filetype, "r", true);
+
+
+                    if(string.IsNullOrWhiteSpace(filetype))
+                    {
+                        filetype = ".png";   //取类型失败时默认就是png
+                    }
+                    else
+                    {
+                        filetype = "." + filetype;
+                    }
+
+                    File.WriteAllBytes(filename + filetype, data);
+
+                    if (cbUseSize.Checked)
+                    {
+                        Image img = Image.FromFile(filename + filetype);
+                        string filename2 = filename + "_" + img.Width + "x" + img.Height + filetype;
+                        img.Dispose();
+                        File.Move(filename + filetype, filename2); //重命名
+                    }
                 }
 
                 if(!string.IsNullOrWhiteSpace(err2))
@@ -449,4 +509,19 @@ namespace QZAlbumTool
         }
 
     }
+
+
+    public class AA : ICookieVisitor
+    {
+        public void Dispose()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Visit(CefSharp.Cookie cookie, int count, int total, ref bool deleteCookie)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
 }
