@@ -34,14 +34,14 @@
             this.panel2 = new System.Windows.Forms.Panel();
             this.listView1 = new System.Windows.Forms.ListView();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.label1 = new System.Windows.Forms.Label();
+            this.cbDir = new System.Windows.Forms.CheckBox();
+            this.cbUseSize = new System.Windows.Forms.CheckBox();
             this.panel3 = new System.Windows.Forms.Panel();
             this.btnSelectAll = new System.Windows.Forms.Button();
             this.btnExport = new System.Windows.Forms.Button();
             this.btnSelectNot = new System.Windows.Forms.Button();
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.listBox1 = new System.Windows.Forms.ListBox();
-            this.cbUseSize = new System.Windows.Forms.CheckBox();
             this.tabControl1.SuspendLayout();
             this.tabPageAlbum.SuspendLayout();
             this.panel2.SuspendLayout();
@@ -89,9 +89,9 @@
             // 
             this.panel2.Controls.Add(this.listView1);
             this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel2.Location = new System.Drawing.Point(3, 46);
+            this.panel2.Location = new System.Drawing.Point(3, 55);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(478, 367);
+            this.panel2.Size = new System.Drawing.Size(478, 358);
             this.panel2.TabIndex = 1;
             // 
             // listView1
@@ -100,29 +100,44 @@
             this.listView1.HideSelection = false;
             this.listView1.Location = new System.Drawing.Point(0, 0);
             this.listView1.Name = "listView1";
-            this.listView1.Size = new System.Drawing.Size(478, 367);
+            this.listView1.Size = new System.Drawing.Size(478, 358);
             this.listView1.TabIndex = 1;
             this.listView1.UseCompatibleStateImageBehavior = false;
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.cbDir);
             this.panel1.Controls.Add(this.cbUseSize);
-            this.panel1.Controls.Add(this.label1);
             this.panel1.Controls.Add(this.panel3);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel1.Location = new System.Drawing.Point(3, 3);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(478, 43);
+            this.panel1.Size = new System.Drawing.Size(478, 52);
             this.panel1.TabIndex = 0;
             // 
-            // label1
+            // cbDir
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(5, 6);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(113, 12);
-            this.label1.TabIndex = 4;
-            this.label1.Text = "打个广告：富婆加我";
+            this.cbDir.AutoSize = true;
+            this.cbDir.Checked = true;
+            this.cbDir.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cbDir.Location = new System.Drawing.Point(7, 6);
+            this.cbDir.Name = "cbDir";
+            this.cbDir.Size = new System.Drawing.Size(108, 16);
+            this.cbDir.TabIndex = 6;
+            this.cbDir.Text = "以相册名做区分";
+            this.cbDir.UseVisualStyleBackColor = true;
+            // 
+            // cbUseSize
+            // 
+            this.cbUseSize.AutoSize = true;
+            this.cbUseSize.Checked = true;
+            this.cbUseSize.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cbUseSize.Location = new System.Drawing.Point(7, 27);
+            this.cbUseSize.Name = "cbUseSize";
+            this.cbUseSize.Size = new System.Drawing.Size(108, 16);
+            this.cbUseSize.TabIndex = 5;
+            this.cbUseSize.Text = "文件名包含尺寸";
+            this.cbUseSize.UseVisualStyleBackColor = true;
             // 
             // panel3
             // 
@@ -132,12 +147,12 @@
             this.panel3.Dock = System.Windows.Forms.DockStyle.Right;
             this.panel3.Location = new System.Drawing.Point(172, 0);
             this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(306, 43);
+            this.panel3.Size = new System.Drawing.Size(306, 52);
             this.panel3.TabIndex = 3;
             // 
             // btnSelectAll
             // 
-            this.btnSelectAll.Location = new System.Drawing.Point(27, 6);
+            this.btnSelectAll.Location = new System.Drawing.Point(27, 9);
             this.btnSelectAll.Name = "btnSelectAll";
             this.btnSelectAll.Size = new System.Drawing.Size(75, 34);
             this.btnSelectAll.TabIndex = 0;
@@ -147,7 +162,7 @@
             // 
             // btnExport
             // 
-            this.btnExport.Location = new System.Drawing.Point(226, 6);
+            this.btnExport.Location = new System.Drawing.Point(226, 9);
             this.btnExport.Name = "btnExport";
             this.btnExport.Size = new System.Drawing.Size(75, 34);
             this.btnExport.TabIndex = 2;
@@ -157,7 +172,7 @@
             // 
             // btnSelectNot
             // 
-            this.btnSelectNot.Location = new System.Drawing.Point(119, 6);
+            this.btnSelectNot.Location = new System.Drawing.Point(119, 9);
             this.btnSelectNot.Name = "btnSelectNot";
             this.btnSelectNot.Size = new System.Drawing.Size(75, 34);
             this.btnSelectNot.TabIndex = 1;
@@ -182,7 +197,7 @@
             this.listBox1.FormattingEnabled = true;
             this.listBox1.ItemHeight = 12;
             this.listBox1.Items.AddRange(new object[] {
-            "版本 1.3",
+            "版本 1.4",
             "时间 2019.11.03",
             "作者 Yui",
             "博客 https://www.kaho.tv",
@@ -192,18 +207,6 @@
             this.listBox1.Size = new System.Drawing.Size(478, 410);
             this.listBox1.TabIndex = 0;
             // 
-            // cbUseSize
-            // 
-            this.cbUseSize.AutoSize = true;
-            this.cbUseSize.Checked = true;
-            this.cbUseSize.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.cbUseSize.Location = new System.Drawing.Point(7, 21);
-            this.cbUseSize.Name = "cbUseSize";
-            this.cbUseSize.Size = new System.Drawing.Size(108, 16);
-            this.cbUseSize.TabIndex = 5;
-            this.cbUseSize.Text = "文件名包含尺寸";
-            this.cbUseSize.UseVisualStyleBackColor = true;
-            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -211,7 +214,7 @@
             this.ClientSize = new System.Drawing.Size(492, 442);
             this.Controls.Add(this.tabControl1);
             this.Name = "FormMain";
-            this.Text = "QQ相册工具 1.3";
+            this.Text = "QQ相册工具 1.4";
             this.Load += new System.EventHandler(this.FormMain_Load);
             this.tabControl1.ResumeLayout(false);
             this.tabPageAlbum.ResumeLayout(false);
@@ -238,8 +241,8 @@
         private System.Windows.Forms.Button btnExport;
         private System.Windows.Forms.ListBox listBox1;
         private System.Windows.Forms.Panel panel3;
-        private System.Windows.Forms.Label label1;
         private System.Windows.Forms.CheckBox cbUseSize;
+        private System.Windows.Forms.CheckBox cbDir;
     }
 }
 

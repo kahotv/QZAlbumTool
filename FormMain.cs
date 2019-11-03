@@ -87,29 +87,6 @@ namespace QZAlbumTool
             return t & 0x7FFFFFFF;
         }
 
-        private JObject ParseCallbackJson(string html)
-        {
-            JObject jobj = null;
-            if (string.IsNullOrWhiteSpace(html))
-                return null;
-
-            string start_key = "shine0_Callback(";
-            string end_key = ");";
-
-            int start = html.IndexOf(start_key);
-            int end = html.LastIndexOf(end_key);
-
-            if (start >= 0 && end >= 0 && end > start)
-            {
-                html = html.Substring(start+ start_key.Length, end - start- start_key.Length);
-
-                try { jobj = JObject.Parse(html); } catch { }
-
-            }
-
-            return jobj;
-        }
-
         private List<JObject> GetAlbumList(string p_skey,string qqnumber)
         {
             //检查登录 跳转到相册，失败就没登陆
@@ -128,7 +105,7 @@ namespace QZAlbumTool
                 "&outCharset=utf-8" +
                 "&source=qzone" +
                 "&plat=qzone" +
-                "&format=jsonp" +
+                "&format=json" +
                 "&notice=0" +
                 "&filter=1" +
                 "&handset=4" +
@@ -137,6 +114,7 @@ namespace QZAlbumTool
                 "&needUserInfo=1" +
                 "&idcNum=4" +
                 "&callbackFun=shine0" +
+                //"&mode=2" + 
                 "&_=" + DateTime.UtcNow.ToFileTimeUtc().ToString();
 
             WebClient wc = new WebClient() { Encoding = Encoding.UTF8 };
@@ -147,7 +125,7 @@ namespace QZAlbumTool
             try { json = wc.DownloadString(url); } catch { Thread.Sleep(1000); }
             if(json == null) try { json = wc.DownloadString(url); } catch { }
 
-            JObject jobj = ParseCallbackJson(json);
+            JObject jobj = JObject.Parse(json);
 
             try
             {
@@ -190,14 +168,14 @@ namespace QZAlbumTool
         /// <param name="pre">url</param>
         /// <param name="type">a、m、b</param>
         /// <returns></returns>
-        private Image GetImage(string pre,string type = null,bool save = false)
+        private Image GetImage(string url,bool save = false)
         {
             Image img = null;
 
             try
             {
                 string filetype = "";
-                byte[] data = GetFile(pre,out filetype, type, save);
+                byte[] data = GetFile(url, out filetype,save);
 
                 using (MemoryStream mStream = new MemoryStream(data))
                 {
@@ -208,7 +186,7 @@ namespace QZAlbumTool
 
             return img;
         }
-        private byte[] GetFile(string pre,out string filetype,string type = null, bool save = false)
+        private byte[] GetFile(string url,out string filetype,bool save = false)
         {
             byte[] data = null;
 
@@ -217,44 +195,15 @@ namespace QZAlbumTool
             {
                 WebClient wc = new WebClient();
                 CopyCookie(web,wc);
-                //wc.Headers.Add("cookie", web.GetCookieManager().ToString());
-                //wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36");
-                //string url = pre + "&rf=albumlist&t=5";
-                //string url = pre + "&d=0";
 
-                string url = pre;
-
-                if (!string.IsNullOrWhiteSpace(type))
-                {
-                    if (url.Contains("/psb?/"))
-                    {
-                        if(url.Contains("/a/"))
-                            url = url.Replace("/a/", "/" + type + "/");
-                        else if(url.Contains("/b/"))
-                            url = url.Replace("/b/", "/" + type + "/");
-                    }
+                if (save)
                     url += "&d=1";
-                    if (save)
-                        url += "&save=1";
-
-                    //把url换成原图url更换host就行
-                    url = Regex.Replace(url, @"//([a-z 0-9 .])*/", "//r.photo.store.qq.com/");
-                    //http://r.photo.store.qq.com/psb?/V12fsSln18e8BB/8*DJV4OpdWekCnDzBw3vNgCPDbUY4TrTvNOCwMmA14Y!/b/dC8BAAAAAAAA&bo=AAqgBQAKoAURBzA!
-                    //http://r.photo.store.qq.com/psb?/V12fsSln18e8BB/u623hhimDbAeYuMkulM6JFuTmCTIFqlr0h*ArmMrPrc!/r/dA0BAAAAAAAA
-
-                }
-                else
-                {
-                    url += "&t=0";
-                }
 
                 data = wc.DownloadData(url);
 
                 try 
                 {
-
                     filetype = wc.ResponseHeaders["Content-Disposition"].Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)[1].Split('=')[1].Split('.')[1];
-
                 }
                 catch { }
 
@@ -302,19 +251,21 @@ namespace QZAlbumTool
         {
             listView1.Items.Clear();
             listView1.LargeImageList = new ImageList();
+            listView1.LargeImageList.ColorDepth = ColorDepth.Depth32Bit;
             listView1.LargeImageList.ImageSize = new Size(146, 110);
             listView1.View = View.LargeIcon;
             int i = 0;
             foreach (dynamic jitem in list)
             {
                 string name = jitem.name;
-                Image img = GetImage((string)jitem.pre);
+                string url = ((string)jitem.pre).Replace("/a/", "/m/");
+                Image img = GetImage(url);
                 //Debug.WriteLine("添加图片" + i + "| url:" + (string)jitem.pre);
 
                 if (img == null)
                 {
                     Thread.Sleep(500);
-                    img = GetImage((string)jitem.pre);
+                    img = GetImage(url);
                 }
 
                 if (img == null)
@@ -380,7 +331,7 @@ namespace QZAlbumTool
                 "&source=qzone" +
                 "&plat=qzone" +
                 "&outstyle=json" +
-                "&format=jsonp" +
+                "&format=json" +
                 "&json_esc=1" +
                 "&question=" +
                 "&answer=" +
@@ -388,7 +339,6 @@ namespace QZAlbumTool
                 "&_=" + DateTime.UtcNow.ToFileTimeUtc().ToString();
 
             WebClient wc = new WebClient() {  Encoding = Encoding.UTF8};
-            //wc.Headers.Add("cookie", web.GetCookieManager().ToString());
             CopyCookie(web, wc);
             string resp = wc.DownloadString(url);
 
@@ -398,13 +348,6 @@ namespace QZAlbumTool
             {
                 if (string.IsNullOrWhiteSpace(resp))
                     break;
-
-                string s_key = "shine0_Callback(";
-                string e_key = ");";
-                int start = resp.IndexOf(s_key) + s_key.Length;
-                int end = resp.LastIndexOf(e_key);
-
-                resp = resp.Substring(start, end - start);
                 JObject jobj = JObject.Parse(resp);
 
                 if ((int)jobj["code"] != 0 || (int)jobj["subcode"] != 0)
@@ -426,9 +369,12 @@ namespace QZAlbumTool
             if (m_dlg.ShowDialog() != DialogResult.OK)
                 return;
 
-            string path = m_dlg.SelectedPath;
-
+            string path_parent = m_dlg.SelectedPath;
+            string path = "";
             string err = "这些图片下载失败:\r\n";
+
+            int album_counter = 0;
+            int photo_counter = 0;
 
             foreach (ListViewItem item in listView1.Items)
             {
@@ -447,10 +393,22 @@ namespace QZAlbumTool
                     continue;
                 }
                 int counter = 0;
-                foreach(JObject jphoto in list)
+
+                path = path_parent;
+
+                if (cbDir.Checked)
+                {
+                    path = path + "\\" + jitem.name;
+
+                    if(!Directory.Exists(path))             //创建子目录
+                        Directory.CreateDirectory(path);
+                }
+
+
+                foreach (JObject jphoto in list)
                 {
                     string photo_batchid = (string)jphoto["batchId"];
-                    string photo_url = (string)jphoto["url"];
+                    string photo_url = (string)jphoto["raw"] == "" ? (string)jphoto["url"] : (string)jphoto["raw"];
                     string photo_name = (string)jphoto["name"];
                     //int photo_witdh = (int)jphoto["width"];
                     //int photo_height = (int)jphoto["height"];
@@ -477,7 +435,7 @@ namespace QZAlbumTool
                     
 
                     string filetype = "";
-                    byte[] data = GetFile(photo_url,out filetype, "r", true);
+                    byte[] data = GetFile(photo_url, out filetype, true);
 
 
                     if(string.IsNullOrWhiteSpace(filetype))
@@ -498,30 +456,19 @@ namespace QZAlbumTool
                         img.Dispose();
                         File.Move(filename + filetype, filename2); //重命名
                     }
+
+                    photo_counter++;
                 }
 
-                if(!string.IsNullOrWhiteSpace(err2))
+                if (!string.IsNullOrWhiteSpace(err2))
                 {
                     err += jitem.name + "[" + err2 + "]\r\n";
                 }
+
+                album_counter++;
             }
-            MessageBox.Show("处理完毕");
+            MessageBox.Show("处理完毕,共" + album_counter + "个相册," +  photo_counter + "张相片");
         }
 
     }
-
-
-    public class AA : ICookieVisitor
-    {
-        public void Dispose()
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool Visit(CefSharp.Cookie cookie, int count, int total, ref bool deleteCookie)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
 }
