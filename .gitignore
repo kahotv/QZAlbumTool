@@ -1,0 +1,10 @@
+*.ncb
+*.aps
+.vs
+Debug
+Release
+driver
+output
+output_*
+*_Release
+packages

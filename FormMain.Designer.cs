@@ -197,11 +197,15 @@
             this.listBox1.FormattingEnabled = true;
             this.listBox1.ItemHeight = 12;
             this.listBox1.Items.AddRange(new object[] {
-            "版本 1.4",
-            "时间 2019.11.03",
+            "版本 1.5",
+            "时间 2025.04.07",
             "作者 Yui",
-            "博客 https://www.kaho.tv",
-            "源码 https://github.com/kahotv/QZAlbumTool"});
+            "源码 https://github.com/kahotv/QZAlbumTool",
+            "本次更新",
+            "1. 修改：更新获取原图的方式。",
+            "2. 修改：修复相册名没有处理特殊字符导致创建相册目录失败的bug。",
+            "3. 修改：升级`CefShrp`库到134.3.9。",
+            "4. 修改：升级`.net framework`到4.8。"});
             this.listBox1.Location = new System.Drawing.Point(3, 3);
             this.listBox1.Name = "listBox1";
             this.listBox1.Size = new System.Drawing.Size(478, 410);
@@ -214,7 +218,7 @@
             this.ClientSize = new System.Drawing.Size(492, 442);
             this.Controls.Add(this.tabControl1);
             this.Name = "FormMain";
-            this.Text = "QQ相册工具 1.4";
+            this.Text = "QQ相册工具 1.5";
             this.Load += new System.EventHandler(this.FormMain_Load);
             this.tabControl1.ResumeLayout(false);
             this.tabPageAlbum.ResumeLayout(false);

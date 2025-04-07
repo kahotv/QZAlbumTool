@@ -15,6 +15,7 @@ using Newtonsoft.Json.Linq;
 using CefSharp;
 using CefSharp.WinForms;
 using System.Text.RegularExpressions;
+using System.Drawing.Drawing2D;
 
 namespace QZAlbumTool
 {
@@ -203,7 +204,11 @@ namespace QZAlbumTool
 
                 try 
                 {
-                    filetype = wc.ResponseHeaders["Content-Disposition"].Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)[1].Split('=')[1].Split('.')[1];
+                    var content_disposition = wc.ResponseHeaders["Content-Disposition"];
+                    if (!string.IsNullOrWhiteSpace(content_disposition))
+                    {
+                        filetype = content_disposition.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)[1].Split('=')[1].Split('.')[1];
+                    }
                 }
                 catch { }
 
@@ -364,6 +369,31 @@ namespace QZAlbumTool
             return list;
         }
 
+        private string GetPhotoUrl(JObject jphoto)
+        {
+            // 原图     原图   普通图（新版）
+            //origin_url > raw > url
+            string url = "";
+
+            url = (string)jphoto["origin_url"];
+
+            if (string.IsNullOrWhiteSpace(url))
+                url = (string)jphoto["raw"];
+
+            if (string.IsNullOrWhiteSpace(url))
+                url = (string)jphoto["url"];
+
+            return url;
+        }
+
+        //修正图片URL，移除一些特殊字符
+        string FixPhotoName(string name)
+        {
+            string list_del = "\\/:*?\"|.<>";
+            name = new string(name.Trim().Select(cc => !list_del.Contains(cc) ? cc : '_').ToArray());
+            return name;
+        }
+
         private void BtnExport_Click(object sender, EventArgs e)
         {
             if (m_dlg.ShowDialog() != DialogResult.OK)
@@ -398,9 +428,13 @@ namespace QZAlbumTool
 
                 if (cbDir.Checked)
                 {
-                    path = path + "\\" + jitem.name;
+                    string name = jitem.name;
 
-                    if(!Directory.Exists(path))             //创建子目录
+                    name = FixPhotoName(name);
+
+                    path = path + "\\" + name;
+
+                    if (!Directory.Exists(path))             //创建子目录
                         Directory.CreateDirectory(path);
                 }
 
@@ -408,7 +442,8 @@ namespace QZAlbumTool
                 foreach (JObject jphoto in list)
                 {
                     string photo_batchid = (string)jphoto["batchId"];
-                    string photo_url = (string)jphoto["raw"] == "" ? (string)jphoto["url"] : (string)jphoto["raw"];
+                    Debug.WriteLine((string)jphoto["name"]);
+                    string photo_url = GetPhotoUrl(jphoto);
                     string photo_name = (string)jphoto["name"];
                     //int photo_witdh = (int)jphoto["width"];
                     //int photo_height = (int)jphoto["height"];
@@ -421,18 +456,11 @@ namespace QZAlbumTool
                         continue;
                     }
 
-                    photo_name = photo_name.Replace('\\', '_').Replace('/', '_').Replace(':', '_');
+                    photo_name = FixPhotoName(photo_name);
 
-                    string filename = path + "\\" + counter++  + "_" +photo_name;
+                    string filename = path + "\\" + counter++ + "_" + photo_name;
 
-                    filename = filename
-                        .Replace('*', '_')
-                        .Replace('?', '_')
-                        .Replace('<', '_')
-                        .Replace('>', '_')
-                        .Replace('|', '_');
 
-                    
 
                     string filetype = "";
                     byte[] data = GetFile(photo_url, out filetype, true);
